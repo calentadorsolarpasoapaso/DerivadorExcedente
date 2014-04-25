@@ -7,7 +7,7 @@ const uint8_t SEGUNDOS_TIMEOUT_DERIVANDO=20; //Segundos que esperamos hasta para
 const uint8_t LIMITE_SUPERIOR=50; //Objetivo, tener un consumo constante de 50w
 const uint8_t LIMITE_INFERIOR=0; //Objetivo, nunca por debajo de cero
 
-float FACTOR_CONVERSOR_WATIOS=3.33;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
+float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
 
 const uint8_t VALOR_R_VARIABLE=99; //Objetivo, nunca por debajo de cero
 
@@ -331,6 +331,8 @@ boolean timeoutDesactivarDerivacion(){
 
 void setupRadioFrecuencia(){
     Serial.println("Inicializando RF");
+    pinMode(13, OUTPUT);
+    digitalWrite(13, LOW);
 
     // Initialise the IO and ISR
     vw_set_rx_pin(PIN_RADIO_FRECUENCIA);
@@ -342,27 +344,27 @@ void setupRadioFrecuencia(){
 }
 
 int leerValorRadioFrecuencia(){
-    uint8_t buf[VW_MAX_MESSAGE_LEN];
-    uint8_t buflen = VW_MAX_MESSAGE_LEN;
+    uint8_t buf[50];
+    uint8_t buflen = 50;
 
     if (vw_get_message(buf, &buflen)) // Non-blocking
     {
 	int i;
-        digitalWrite(13, true); // Flash a light to show received good message
+        digitalWrite(13, HIGH); // Flash a light to show received good message
 	// Message with a good checksum received, dump it.
 	String valor="";
 	for (i = 0; i < buflen; i++)
 	{
             char caracter=(char)buf[i];
-              valor+=caracter;
+            valor+=caracter;
 	}
        
         String watts=valor.substring(0,valor.indexOf(' '));
 	
         int iWatts=watts.toInt();
         if(iWatts==0) iWatts=INDEFINIDO;
+        digitalWrite(13, LOW);
         return iWatts;
-        digitalWrite(13, false);
     }
     return INDEFINIDO;
 }
