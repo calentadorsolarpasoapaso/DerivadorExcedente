@@ -8,16 +8,16 @@ const uint8_t LIMITE_SUPERIOR=50; //Objetivo, tener un consumo constante de 50w
 const uint8_t LIMITE_INFERIOR=0; //Objetivo, nunca por debajo de cero
 
 //float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
-float FACTOR_CONVERSOR_WATIOS_R_SECUNDARIA=0.333/4;
+float FACTOR_CONVERSOR_WATIOS_R_SECUNDARIA=0.14; // bombilla70w
 float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
 
-const uint8_t VALOR_R_VARIABLE=99; //Objetivo, nunca por debajo de cero
+//const uint8_t VALOR_R_VARIABLE=99; //Objetivo, nunca por debajo de cero
 
 int RTOTAL=500;
 
 //Estos w son el mínimo que consume la resistencia principal activa. Cuando la generación sea de 0 a MINIMO_WATIOS_RPRINCIPAL cambiaremos
 //la derivación a una segunda resistencia (bombilla de 120W por ejemplo)
-int MINIMO_WATIOS_RPRINCIPAL=40; 
+int MINIMO_WATIOS_RPRINCIPAL=100; 
 
 //PIN RECEPTOR NANO=
 const uint8_t PIN_RADIO_FRECUENCIA=11;
@@ -78,6 +78,10 @@ void derivarARSecundaria(){
 void derivarARPrimaria(){
     digitalWrite(PIN_R_PRINCIPAL_O_SECUNDARIA1, HIGH);
     digitalWrite(PIN_R_PRINCIPAL_O_SECUNDARIA2, HIGH);
+}
+
+boolean estaDerivandoRSecundaria(){
+  return digitalRead(PIN_R_PRINCIPAL_O_SECUNDARIA1)==LOW;
 }
 
 
@@ -170,22 +174,31 @@ int ajustarSalida( int watios){
   if(watios<=LIMITE_INFERIOR){
           activarDerivacion(); //Se activa la derivación al mínimo de derivación
     }
+  
 
   if(estaDerivando){
 
      //Si están activadas todas las resistencias y el consumo está entre 0 y - MINIMO_WATIOS_RPRINCIPAL tenemos que activar la R2
-/*     
-     if(estanResistenciasActivadas() && watios>(-MINIMO_WATIOS_RPRINCIPAL)){  
-       Serial.println("Bombilla");
+     Serial.println(estanResistenciasActivadas());
+     Serial.println(estanResistenciasActivadas());
+     
+     if((estanResistenciasActivadas() || estaDerivandoRSecundaria()) && (watios<MINIMO_WATIOS_RPRINCIPAL && watios>(-MINIMO_WATIOS_RPRINCIPAL))){  
+       if(watios>LIMITE_SUPERIOR || watios<LIMITE_INFERIOR){
+        Serial.println("Bombilla");
         derivarARSecundaria();
         incrementoEstimadoR=calcularIncrementoEstimadoR(watios,rTotalActual,LIMITE_SUPERIOR,LIMITE_INFERIOR,FACTOR_CONVERSOR_WATIOS_R_SECUNDARIA);
+       }
+       else{ //Watios 0-50
+         desactivarDerivacion();
+       
+       }
       }
       else{
-        */
-       Serial.println("Calefactor");
+        Serial.println("Calefactor");
+        
         derivarARPrimaria();
         incrementoEstimadoR=calcularIncrementoEstimadoR(watios,rTotalActual,LIMITE_SUPERIOR,LIMITE_INFERIOR,FACTOR_CONVERSOR_WATIOS);
-      //}
+      }
 
       modificarResistencias(watios,incrementoEstimadoR,rTotalActual);
 
