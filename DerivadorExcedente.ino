@@ -8,16 +8,16 @@ const uint8_t LIMITE_SUPERIOR=50; //Objetivo, tener un consumo constante de 50w
 const uint8_t LIMITE_INFERIOR=0; //Objetivo, nunca por debajo de cero
 
 //float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
-float FACTOR_CONVERSOR_WATIOS_R_SECUNDARIA=0.14; // bombilla70w
+float FACTOR_CONVERSOR_WATIOS_R_SECUNDARIA=0.333/4;
 float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
 
-//const uint8_t VALOR_R_VARIABLE=99; //Objetivo, nunca por debajo de cero
+const uint8_t VALOR_R_VARIABLE=99; //Objetivo, nunca por debajo de cero
 
 int RTOTAL=500;
 
 //Estos w son el mínimo que consume la resistencia principal activa. Cuando la generación sea de 0 a MINIMO_WATIOS_RPRINCIPAL cambiaremos
 //la derivación a una segunda resistencia (bombilla de 120W por ejemplo)
-int MINIMO_WATIOS_RPRINCIPAL=100; 
+int MINIMO_WATIOS_RPRINCIPAL=40; 
 
 //PIN RECEPTOR NANO=
 const uint8_t PIN_RADIO_FRECUENCIA=11;
@@ -80,10 +80,16 @@ void derivarARPrimaria(){
     digitalWrite(PIN_R_PRINCIPAL_O_SECUNDARIA2, HIGH);
 }
 
+<<<<<<< HEAD
 boolean estaDerivandoRSecundaria(){
   return digitalRead(PIN_R_PRINCIPAL_O_SECUNDARIA1)==LOW;
 }
 
+boolean estaDerivandoRPrimaria(){
+  return digitalRead(PIN_R_PRINCIPAL_O_SECUNDARIA1)==HIGH;
+}
+=======
+>>>>>>> parent of c55eb2f... Cambios
 
 void inicializarPinesR(){
   for(int i=0;i<8;i++){
@@ -162,45 +168,96 @@ void loop() {
 
 /*
 Tenemos una placa de relays de 8 elementos, lo que nos permite jugar con ellos para ajustar al máximo la salida
+También tenemos un relé para derivar o no, y otro para elegir el elemento de derivación
 */
 
 int ajustarSalida( int watios){
+  int incrementoEstimadoR_Primaria=0;
+  int incrementoEstimadoR_Secundaria=0;
   int incrementoEstimadoR=0;
+  
   uint8_t valorIncremento=0;
+  boolean bActivaDerivacion=false;
 
-  //puede pasar que tenga que decrementar mÃ¡s de una resistencia de 100k
   int rTotalActual=getValorActualResistencia() ;
   
   if(watios<=LIMITE_INFERIOR){
-          activarDerivacion(); //Se activa la derivación al mínimo de derivación
+          bActivaDerivacion=true;
     }
-  
 
+<<<<<<< HEAD
+  if(bActivaDerivacion || estaDerivando){
+      
+      incrementoEstimadoR_Secundaria=calcularIncrementoEstimadoR(watios,rTotalActual,LIMITE_SUPERIOR,LIMITE_INFERIOR,FACTOR_CONVERSOR_WATIOS_R_SECUNDARIA);
+      incrementoEstimadoR_Primaria=calcularIncrementoEstimadoR(watios,rTotalActual,LIMITE_SUPERIOR,LIMITE_INFERIOR,FACTOR_CONVERSOR_WATIOS);
+    
+      //Si no hay que tocar la resistencia, salimos      
+      if(incrementoEstimadoR_Secundaria==0 || incrementoEstimadoR_Primaria==0) return 0;     
+      
+      //Si se esta derivando a la primaria, comprobamos si hay que pasarla a la secundaria
+      if(estaDerivandoRPrimaria()){
+        //Puede pasar que esté derivando y que el límite supere el mínimo, por lo que activaríamos la R secundaria
+        if(estanResistenciasActivadas()){
+          //Pueden pasar varias cosas
+          //que watios tenga un rango tan pequeño, que la R priaria no la pueda ajustar
+          //que watios tenga un valor que la R principal sí pueda ajustar
+          if(watios>-MINIMO_WATIOS_RPRINCIPAL && watios<MINIMO_WATIOS_RPRINCIPAL){
+              //Si esta derivando la principal
+             derivarARSecundaria();
+             incrementoEstimadoR=incrementoEstimadoR_Secundaria;
+          }
+          else if(watios>(MINIMO_WATIOS_RPRINCIPAL+30)){
+             //En este caso el valor es tan grande que mejor apagamos derivacion
+             desactivarDerivacion();
+          }
+          else if(watios<-(MINIMO_WATIOS_RPRINCIPAL+30)){
+            //Deviarmos a primaria
+             incrementoEstimadoR=incrementoEstimadoR_Primaria;
+          }
+        }
+        else{//Si hay alguna R activada, se continuará con el canal normal de derivación a R principal
+          incrementoEstimadoR=incrementoEstimadoR_Primaria;
+        }
+      }
+      else if(estaDerivandoRSecundaria()){
+        //Comprobar que hay que derivar a secundaria
+        //En caso de estar derivando a secundaria, pueden pasar varias cosas
+          if(watios<-MINIMO_WATIOS_RPRINCIPAL){
+            //derivaremos a primaria de nuevo
+             derivarARPrimaria();
+             incrementoEstimadoR=incrementoEstimadoR_Primaria;
+          }
+          else if(watios>(MINIMO_WATIOS_RPRINCIPAL+30)){
+            //Directamente detenemos derivacion
+             desactivarDerivacion();
+          }
+          else{ //Seguimos derivando a secundaria
+               incrementoEstimadoR=incrementoEstimadoR_Secundaria;
+          }
+      }
+      
+=======
   if(estaDerivando){
 
      //Si están activadas todas las resistencias y el consumo está entre 0 y - MINIMO_WATIOS_RPRINCIPAL tenemos que activar la R2
-     Serial.println(estanResistenciasActivadas());
-     Serial.println(estanResistenciasActivadas());
-     
-     if((estanResistenciasActivadas() || estaDerivandoRSecundaria()) && (watios<MINIMO_WATIOS_RPRINCIPAL && watios>(-MINIMO_WATIOS_RPRINCIPAL))){  
-       if(watios>LIMITE_SUPERIOR || watios<LIMITE_INFERIOR){
-        Serial.println("Bombilla");
+/*     
+     if(estanResistenciasActivadas() && watios>(-MINIMO_WATIOS_RPRINCIPAL)){  
+       Serial.println("Bombilla");
         derivarARSecundaria();
         incrementoEstimadoR=calcularIncrementoEstimadoR(watios,rTotalActual,LIMITE_SUPERIOR,LIMITE_INFERIOR,FACTOR_CONVERSOR_WATIOS_R_SECUNDARIA);
-       }
-       else{ //Watios 0-50
-         desactivarDerivacion();
-       
-       }
       }
       else{
-        Serial.println("Calefactor");
-        
+        */
+       Serial.println("Calefactor");
         derivarARPrimaria();
         incrementoEstimadoR=calcularIncrementoEstimadoR(watios,rTotalActual,LIMITE_SUPERIOR,LIMITE_INFERIOR,FACTOR_CONVERSOR_WATIOS);
-      }
+      //}
 
+>>>>>>> parent of c55eb2f... Cambios
       modificarResistencias(watios,incrementoEstimadoR,rTotalActual);
+    
+    if(bActivaDerivacion) activarDerivacion(); //Se activa la derivación al mínimo de derivación
+
 
     if(estaDerivando && estanResistenciasActivadas()){
   
@@ -208,13 +265,16 @@ int ajustarSalida( int watios){
       if(tIniDerivandoAlMinimo==0){
         tIniDerivandoAlMinimo=millis();
       }
-  
       //Si derivando > segundos predefinidos, paramos la derivación
-      if(timeoutDesactivarDerivacion()) desactivarDerivacion();
+      if(timeoutDesactivarDerivacion()){ 
+        Serial.println("Desactivar Derivacion por timeout");
+        desactivarDerivacion();
+      }
     }
     else{
       tIniDerivandoAlMinimo=0;
     }
+
   }
 
 
@@ -227,7 +287,16 @@ int ajustarSalida( int watios){
 }
 
 float calcularWatiosDerivando(){
-  float wDerivando=(RTOTAL-getValorActualResistencia())*FACTOR_CONVERSOR_WATIOS;
+  float wDerivando=(RTOTAL-getValorActualResistencia());
+  if(!estaDerivando) return 0;
+
+  if(estaDerivandoRPrimaria()){
+	wDerivando=wDerivando*FACTOR_CONVERSOR_WATIOS;
+  }
+  else if(estaDerivandoRSecundaria()){
+	wDerivando=wDerivando*FACTOR_CONVERSOR_WATIOS_R_SECUNDARIA;
+ 
+  }
   return wDerivando;
 }
 
@@ -262,11 +331,6 @@ void modificarResistencias(int watios,int incrementoEstimadoR,int rTotalActual){
   
   int rTotalEstimada=rTotalActual+incrementoEstimadoR;
 
-  //Si el valor era negativo, quiero que se quede por encima a cero en el ajuste, por lo que prefiero pasarme
-  if(watios<0){
-      rTotalEstimada-=10;
-  }
-
   //Aqui puede pasar que la rTotalEstimada sea muy grande, y entonces es mejor apagar el sistema
   //Para que la Resistencia no consuma el mínimo
   Serial.println("RTotalEstimada: " + rTotalEstimada);
@@ -283,39 +347,38 @@ void modificarResistencias(int watios,int incrementoEstimadoR,int rTotalActual){
     //Calculamos el nuevo vector de activaciones
     int rAcumulada=0;
     
-    
     for(int i=0;i<8;i++){
       rAcumulada+=VALOR_R[i];
       
       if(rAcumulada>rTotalEstimada){
         //Si sumando este valor, superamos el umbral, habrá que probar con el siguiente y este ponerlo a false
         ACTIV_R_TMP[i]=false;
-        rAcumulada-=VALOR_R[i];
       }
       else{
         ACTIV_R_TMP[i]=true;
       }
     }
+
+    modificarReles(ACTIV_R_TMP);
+
+  }//Fin else
   
-    
-    Serial.println("");
+  return ;
+  }
+
+void modificarReles(boolean ACTIV_R_TMP[8]){
+    Serial.println("Modicando Reles Resistencia Variable ");
     for(int i=0;i<8;i++){
       Serial.print(ACTIV_R_TMP[i]);
     }
-  
-  
+
     //Ahora toca activar o desactivar las que toquen
     for(int i=0;i<8;i++){
       if(ACTIV_R_TMP[i]) activarResistencia(i);
       else desactivarResistencia(i);
       
     }
-  }//Fin else
-  
-  
-  return ;
-  }
-
+}
 
 /*
 Funcion que estima el incremento o decremento que deberá tener la resistencia para aproximarnos a 0 sin sobrepasar
@@ -347,12 +410,17 @@ int calcularIncrementoEstimadoR(int watios,int rTotal,uint8_t LIMITE_SUPERIOR,ui
 //      r=map(watios, -1000, 1000, -RTOTAL, RTOTAL);
       r=watios/FACTOR_CONVERSOR;
 
-    }
-    //La resistencia tiene un rango de 0-400, nunca debe sobrepasarlo
-    //JJV r=constrain(r, -(RTOTAL), (RTOTAL));  
-    //Si estamos por encima de 0w no queremos volver otra vez a <0 por lo que ajustamos un poco por encima
-    if(watios>0){
-      r=r-20;
+      //La resistencia tiene un rango de 0-400, nunca debe sobrepasarlo
+      //JJV r=constrain(r, -(RTOTAL), (RTOTAL));  
+      //Si estamos por encima de 0w no queremos volver otra vez a <0 por lo que ajustamos un poco por encima
+      if(watios>0){
+        r=r-20;
+      }
+
+      //Si el valor era negativo, quiero que se quede por encima a cero en el ajuste, por lo que prefiero pasarme
+      if(watios<0){
+          r-=10;
+      }
     }
     
     return r;
