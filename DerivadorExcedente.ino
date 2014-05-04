@@ -221,7 +221,7 @@ int ajustarSalida( int watios){
   imprimirDatos(watios,incrementoEstimadoR);  
 
   //Delay para ver los valores en el emulador
-  delay(10000);
+  delay(1000);
 
   return incrementoEstimadoR; 
 }
@@ -355,6 +355,9 @@ int calcularIncrementoEstimadoR(int watios,int rTotal,uint8_t LIMITE_SUPERIOR,ui
       r=r-20;
     }
     
+        //La resistencia tiene un rango de 0-400, nunca debe sobrepasarlo
+    r=constrain(r, -(RTOTAL), (RTOTAL));  
+
     return r;
 }
 
