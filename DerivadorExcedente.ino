@@ -394,12 +394,21 @@ El valor actual de rTotal no sirve de mucho, pero es posible que tenga que usar 
 
 int calcularIncrementoEstimadoR(int watios,int rTotal,uint8_t LIMITE_SUPERIOR,uint8_t LIMITE_INFERIOR,float FACTOR_CONVERSOR){
     int r=0;
+
     //Solo modificaremos la resistencia si estamos fuera de rangos. 
     //Estos valores tendrían que autocalcularse en función del calentador enchufado al potenciometro. Revisar
     if(watios>LIMITE_SUPERIOR || watios<LIMITE_INFERIOR){
 //      r=map(watios, -1000, 1000, -RTOTAL, RTOTAL);
-      r=watios/FACTOR_CONVERSOR;
-
+      r=watios/FACTOR_CONVERSOR ;
+      
+      //Si watios <0 buscamos el punto medio del límite
+      int puntoMedio=((LIMITE_SUPERIOR -LIMITE_INFERIOR)/FACTOR_CONVERSOR)/2;
+      if(watios<0) {
+         r-=puntoMedio;
+      }
+      else{
+         r+=puntoMedio;
+      }
       //La resistencia tiene un rango de 0-400, nunca debe sobrepasarlo
       //JJV r=constrain(r, -(RTOTAL), (RTOTAL));  
       //Si estamos por encima de 0w no queremos volver otra vez a <0 por lo que ajustamos un poco por encima
