@@ -4,7 +4,7 @@ int potValor=0;//Simulacion
 
 const uint8_t SEGUNDOS_TIMEOUT_DERIVANDO=60; //Segundos que esperamos hasta parar la derivación
 
-const uint8_t LIMITE_SUPERIOR=50; //Objetivo, tener un consumo constante de 50w
+const uint8_t LIMITE_SUPERIOR=100; //Objetivo, tener un consumo constante de 50w
 const uint8_t LIMITE_INFERIOR=0; //Objetivo, nunca por debajo de cero
 
 //float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
@@ -314,9 +314,6 @@ void modificarResistencias(int watios,int incrementoEstimadoR,int rTotalActual){
 
   //Aqui puede pasar que la rTotalEstimada sea muy grande, y entonces es mejor apagar el sistema
   //Para que la Resistencia no consuma el mínimo
-  Serial.print("RTotalEstimada: ");
-  Serial.print( rTotalEstimada);
-  Serial.println("");
   if(rTotalEstimada>(RTOTAL + 30) )
   {
     Serial.println("Se desactiva derivacion porque el consumo es muy alto");
@@ -341,15 +338,8 @@ void modificarResistencias(int watios,int incrementoEstimadoR,int rTotalActual){
       }
       Serial.print(ACTIV_R_TMP[i]);
     }
-    Serial.println("");
 
-    for(int i=0;i<8;i++){
-      if(ACTIV_R_TMP[i]) activarResistencia(i);
-      else desactivarResistencia(i);
-      
-    }
-
-//    modificarReles(ACTIV_R_TMP);
+   modificarReles(ACTIV_R_TMP);
 
   }//Fin else
   
@@ -394,6 +384,7 @@ El valor actual de rTotal no sirve de mucho, pero es posible que tenga que usar 
 
 int calcularIncrementoEstimadoR(int watios,int rTotal,uint8_t LIMITE_SUPERIOR,uint8_t LIMITE_INFERIOR,float FACTOR_CONVERSOR){
     int r=0;
+    int decrece=((LIMITE_SUPERIOR -LIMITE_INFERIOR)/FACTOR_CONVERSOR)/2;
 
     //Solo modificaremos la resistencia si estamos fuera de rangos. 
     //Estos valores tendrían que autocalcularse en función del calentador enchufado al potenciometro. Revisar
@@ -404,10 +395,10 @@ int calcularIncrementoEstimadoR(int watios,int rTotal,uint8_t LIMITE_SUPERIOR,ui
       //Si watios <0 buscamos el punto medio del límite
       int puntoMedio=((LIMITE_SUPERIOR -LIMITE_INFERIOR)/FACTOR_CONVERSOR)/2;
       if(watios<0) {
-         r-=puntoMedio;
+         r-=puntoMedio+2;
       }
       else{
-         r+=puntoMedio;
+         r=r/2;
       }
       //La resistencia tiene un rango de 0-400, nunca debe sobrepasarlo
       //JJV r=constrain(r, -(RTOTAL), (RTOTAL));  
