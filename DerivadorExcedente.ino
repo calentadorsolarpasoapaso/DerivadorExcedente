@@ -4,7 +4,7 @@ int potValor=0;//Simulacion
 
 const uint8_t SEGUNDOS_TIMEOUT_DERIVANDO=60; //Segundos que esperamos hasta parar la derivación
 
-const uint8_t LIMITE_SUPERIOR=100; //Objetivo, tener un consumo constante de 50w
+const uint8_t LIMITE_SUPERIOR=80; //Objetivo, tener un consumo constante de 50w
 const uint8_t LIMITE_INFERIOR=0; //Objetivo, nunca por debajo de cero
 
 //float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
@@ -395,7 +395,7 @@ int calcularIncrementoEstimadoR(int watios,int rTotal,uint8_t LIMITE_SUPERIOR,ui
       //Si watios <0 buscamos el punto medio del límite
       int puntoMedio=((LIMITE_SUPERIOR -LIMITE_INFERIOR)/FACTOR_CONVERSOR)/2;
       if(watios<0) {
-         r-=puntoMedio+2;
+         r-=puntoMedio-3;
       }
       else{
          r=r/2;
