@@ -9,6 +9,7 @@ const uint8_t LIMITE_INFERIOR=0; //Objetivo, nunca por debajo de cero
 
 //float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
 float FACTOR_CONVERSOR_WATIOS_R_SECUNDARIA=0.14; // bombilla70w
+
 float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
 
 //const uint8_t VALOR_R_VARIABLE=99; //Objetivo, nunca por debajo de cero
