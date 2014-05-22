@@ -459,3 +459,4 @@ void ejecutarTestResistencias(){
   activarResistencias();  
   Serial.println("Mulimetro R debe medir 500");
   delay(10000);
+
