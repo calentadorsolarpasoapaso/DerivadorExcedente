@@ -8,7 +8,8 @@ const uint8_t LIMITE_SUPERIOR=60; //Objetivo, tener un consumo constante de 50w
 const uint8_t LIMITE_INFERIOR=0; //Objetivo, nunca por debajo de cero
 
 //float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
-float FACTOR_CONVERSOR_WATIOS=(3.33);//Calculado del consumo tope del calentador/Resistencia del potenciómetro
+//float FACTOR_CONVERSOR_WATIOS=(3.33);//Calculado del consumo tope del calentador/Resistencia del potenciómetro
+float FACTOR_CONVERSOR_WATIOS=(2.8);//Calculado del consumo tope del calentador/Resistencia del potenciómetro
 
 //const uint8_t VALOR_R_VARIABLE=99; //Objetivo, nunca por debajo de cero
 
@@ -322,7 +323,8 @@ int calcularIncrementoEstimadoR(int watios,int rTotal,uint8_t LIMITE_SUPERIOR,ui
     //Si el valor era negativo, quiero que se quede por encima a cero en el ajuste, por lo que prefiero pasarme
     if(watios<0){
         Serial.println(r);
-          r-=(-r/4);
+          //r-=(-r/20);
+            r-=3; //Ajustamos 3
         Serial.println(r);
     }
 
@@ -330,7 +332,9 @@ int calcularIncrementoEstimadoR(int watios,int rTotal,uint8_t LIMITE_SUPERIOR,ui
     if(watios>0){
         Serial.println(r);
         if(r>1){
-          r=(r/2);
+//          r=(r/3);
+            r=r/2; //Ajustamos 3
+
         }
         Serial.println(r);
     }
