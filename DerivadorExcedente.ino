@@ -9,7 +9,7 @@ const uint8_t LIMITE_INFERIOR=0; //Objetivo, nunca por debajo de cero
 
 //float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
 //float FACTOR_CONVERSOR_WATIOS=(3.33);//Calculado del consumo tope del calentador/Resistencia del potenciómetro
-float FACTOR_CONVERSOR_WATIOS=(2.8);//Calculado del consumo tope del calentador/Resistencia del potenciómetro
+float FACTOR_CONVERSOR_WATIOS=(3);//Calculado del consumo tope del calentador/Resistencia del potenciómetro
 
 //const uint8_t VALOR_R_VARIABLE=99; //Objetivo, nunca por debajo de cero
 
@@ -60,6 +60,9 @@ void setup() {
   desactivarDerivacion();
 
   setupRadioFrecuencia();  
+
+  
+  ajustarDerivador();
 
 }
 
@@ -324,7 +327,10 @@ int calcularIncrementoEstimadoR(int watios,int rTotal,uint8_t LIMITE_SUPERIOR,ui
     if(watios<0){
         Serial.println(r);
           //r-=(-r/20);
-            r-=3; //Ajustamos 3
+          if(watios<(-20)){
+            r-=2; //Le sumamos un poquito para que quede por encima
+          }
+          else r=(-2);
         Serial.println(r);
     }
 
@@ -333,8 +339,16 @@ int calcularIncrementoEstimadoR(int watios,int rTotal,uint8_t LIMITE_SUPERIOR,ui
         Serial.println(r);
         if(r>1){
 //          r=(r/3);
-            r=r/2; //Ajustamos 3
-
+          if(watios>LIMITE_SUPERIOR+100){
+              r=r/2; //Ajustamos 3
+          }
+          else if(watios>LIMITE_SUPERIOR+50){
+            r=(r/3);
+          }
+          else if(watios>LIMITE_SUPERIOR+20){
+            r=(r/4);
+          }
+          else r=1;
         }
         Serial.println(r);
     }
@@ -440,23 +454,32 @@ void ejecutarTestResistencias(){
 }
 
 float ajustarDerivador(){
-  float fcv=FACTOR_CONVERSOR_WATIOS;
+   Serial.println("Ajustando Derivador ");
+   delay(5000);
+
+  activarResistencias();
+   activarDerivacion();
+
+   float fcv=FACTOR_CONVERSOR_WATIOS;
 
    int wattsBase=leerValorRadioFrecuencia();
 
-   delay (500); //Esperamos un segundo y medimos
-  
+   delay (5000); //Esperamos un segundo y medimos
+    
+   Serial.println("DesactivarR");
    //Damos máxima potencia a la resistencia y medimos después
    desactivarResistencias(); //Establece máxima potencia
    
-   delay (2000); //Esperamos un segundo y medimos
+   delay (5000); //Esperamos un segundo y medimos
 
    int wattsMaximo=leerValorRadioFrecuencia();
+
+   Serial.println("ActivarR");
 
    //Damos máxima potencia a la resistencia y medimos después
    activarResistencias(); //Establece máxima potencia
    
-   delay (2000); //Esperamos un segundo y medimos
+   delay (5000); //Esperamos un segundo y medimos
    
    int wattsMinimo=leerValorRadioFrecuencia();
   
@@ -469,7 +492,6 @@ float ajustarDerivador(){
    //En las pruebas, la resistencia es lineal
    float factor=(wattsResistorMax-wattsResistorMin)/500; //Ejm: 100-2000w= 1900/500=3,8 80-1000=1,84
    
-   Serial.println("Ajustando Derivador ");
    Serial.print("Base:");
    Serial.print(wattsBase);
    Serial.print(" Max:");
@@ -480,8 +502,12 @@ float ajustarDerivador(){
    Serial.print(wattsResistorMax);
    Serial.print(" wMin:");
    Serial.print(wattsResistorMin);
-   Serial.print(" factor:");
-   Serial.print(factor);
-       
+   Serial.print(" factor RECOMENDADO:");
+   Serial.println(factor);
+   
+   if(factor>0){
+     Serial.println("Se establece el factor de conversión calculado automáticamente");
+     FACTOR_CONVERSOR_WATIOS=factor;      
+   }
 
 }
