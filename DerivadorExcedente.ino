@@ -457,7 +457,7 @@ float ajustarDerivador(){
    Serial.println("Ajustando Derivador ");
    delay(5000);
 
-  activarResistencias();
+   activarResistencias();
    activarDerivacion();
 
    float fcv=FACTOR_CONVERSOR_WATIOS;
@@ -509,5 +509,7 @@ float ajustarDerivador(){
      Serial.println("Se establece el factor de conversión calculado automáticamente");
      FACTOR_CONVERSOR_WATIOS=factor;      
    }
-
 }
+
+
+
