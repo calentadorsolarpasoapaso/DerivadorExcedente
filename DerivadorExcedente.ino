@@ -2,43 +2,39 @@
 
 int potValor=0;//Simulacion
 
-const uint8_t SEGUNDOS_TIMEOUT_DERIVANDO=60; //Segundos que esperamos hasta parar la derivación
+const uint8_t SEGUNDOS_TIMEOUT_DERIVANDO=60; //Segundos que esperamos hasta parar la derivaciÃ³n
 
-const uint8_t LIMITE_SUPERIOR=50; //Objetivo, tener un consumo constante de 50w
+const uint8_t LIMITE_SUPERIOR=60; //Objetivo, tener un consumo constante de 50w
 const uint8_t LIMITE_INFERIOR=0; //Objetivo, nunca por debajo de cero
 
-//float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
-float FACTOR_CONVERSOR_WATIOS_R_SECUNDARIA=0.14; // bombilla70w
-
-float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciómetro
+//float FACTOR_CONVERSOR_WATIOS=(3.33)/2;//Calculado del consumo tope del calentador/Resistencia del potenciÃ³metro
+//float FACTOR_CONVERSOR_WATIOS=(3.33);//Calculado del consumo tope del calentador/Resistencia del potenciÃ³metro
+float FACTOR_CONVERSOR_WATIOS=(3);//Calculado del consumo tope del calentador/Resistencia del potenciÃ³metro
 
 //const uint8_t VALOR_R_VARIABLE=99; //Objetivo, nunca por debajo de cero
 
 int RTOTAL=500;
 
-//Estos w son el mínimo que consume la resistencia principal activa. Cuando la generación sea de 0 a MINIMO_WATIOS_RPRINCIPAL cambiaremos
-//la derivación a una segunda resistencia (bombilla de 120W por ejemplo)
+//Estos w son el mÃ­nimo que consume la resistencia principal activa. Cuando la generaciÃ³n sea de 0 a MINIMO_WATIOS_RPRINCIPAL cambiaremos
+//la derivaciÃ³n a una segunda resistencia (bombilla de 120W por ejemplo)
 int MINIMO_WATIOS_RPRINCIPAL=100; 
 
 //PIN RECEPTOR NANO=
 const uint8_t PIN_RADIO_FRECUENCIA=11;
 const uint8_t PIN_DERIVANDO1=10; 
-const uint8_t PIN_DERIVANDO2=10; 
-const uint8_t PIN_R_PRINCIPAL_O_SECUNDARIA1=12; 
-const uint8_t PIN_R_PRINCIPAL_O_SECUNDARIA2=12; 
 
 int PIN_R[8] =      {2,3,4,5,6,7,8,9};
 
 int VALOR_R[8] =    {200,100,100,50,25,12,6,3};
 int ACTIV_R[8] ={true,true,true,true,true,true,true,true};
 
-//Vector de consumo aproximado, más exacto que el calculado
+//Vector de consumo aproximado, mÃ¡s exacto que el calculado
 int vectorConsumo[255][2];
 
 const int INDEFINIDO=999999;
 boolean estaDerivando = false;
 
-unsigned long tIniDerivandoAlMinimo=0; //Tiempo que servirá para almacenar la última vez que se superó el umbral de 0, para activar el timeout de la derivacion
+unsigned long tIniDerivandoAlMinimo=0; //Tiempo que servirÃ¡ para almacenar la Ãºltima vez que se superÃ³ el umbral de 0, para activar el timeout de la derivacion
 
 long milisLecturaAnterior=0;
 
@@ -55,11 +51,9 @@ void setup() {
 
   Serial.println("www.calentadorsolarpasoapaso.blogspot.com");
   pinMode(PIN_DERIVANDO1, OUTPUT); 
-  pinMode(PIN_DERIVANDO2, OUTPUT); 
   
   
   inicializarPinesR();
-  inicializarPinesR2();
   
   activarResistencias();
 
@@ -69,33 +63,11 @@ void setup() {
   desactivarDerivacion();
 
   setupRadioFrecuencia();  
-<<<<<<< HEAD
-
-}
-
-void inicializarPinesR2(){
-    pinMode(PIN_R_PRINCIPAL_O_SECUNDARIA1, OUTPUT); 
-    pinMode(PIN_R_PRINCIPAL_O_SECUNDARIA2, OUTPUT); 
-}
-void derivarARSecundaria(){
-    digitalWrite(PIN_R_PRINCIPAL_O_SECUNDARIA1, LOW);
-    digitalWrite(PIN_R_PRINCIPAL_O_SECUNDARIA2, LOW);
-}
-
-void derivarARPrimaria(){
-    digitalWrite(PIN_R_PRINCIPAL_O_SECUNDARIA1, HIGH);
-    digitalWrite(PIN_R_PRINCIPAL_O_SECUNDARIA2, HIGH);
-}
-
-boolean estaDerivandoRSecundaria(){
-  return digitalRead(PIN_R_PRINCIPAL_O_SECUNDARIA1)==LOW;
-=======
   
 //  ajustarDerivador();
 
 //  inicializarVectorConsumo();
 
->>>>>>> origin/AjusteExactoVectorizado
 }
 
 
@@ -175,55 +147,36 @@ void loop() {
 }
 
 /*
-Tenemos una placa de relays de 8 elementos, lo que nos permite jugar con ellos para ajustar al máximo la salida
+Tenemos una placa de relays de 8 elementos, lo que nos permite jugar con ellos para ajustar al mÃ¡ximo la salida
 */
 
 int ajustarSalida( int watios){
   int incrementoEstimadoR=0;
   uint8_t valorIncremento=0;
 
-  //puede pasar que tenga que decrementar mÃ¡s de una resistencia de 100k
+  //puede pasar que tenga que decrementar mÃƒÂ¡s de una resistencia de 100k
   int rTotalActual=getValorActualResistencia() ;
   
   if(watios<=LIMITE_INFERIOR){
-          activarDerivacion(); //Se activa la derivación al mínimo de derivación
+          activarDerivacion(); //Se activa la derivaciÃ³n al mÃ­nimo de derivaciÃ³n
     }
   
 
   if(estaDerivando){
 
-     //Si están activadas todas las resistencias y el consumo está entre 0 y - MINIMO_WATIOS_RPRINCIPAL tenemos que activar la R2
-     Serial.println(estanResistenciasActivadas());
-     Serial.println(estanResistenciasActivadas());
-     
-     if((estanResistenciasActivadas() || estaDerivandoRSecundaria()) && (watios<MINIMO_WATIOS_RPRINCIPAL && watios>(-MINIMO_WATIOS_RPRINCIPAL))){  
-       if(watios>LIMITE_SUPERIOR || watios<LIMITE_INFERIOR){
-        Serial.println("Bombilla");
-        derivarARSecundaria();
-        incrementoEstimadoR=calcularIncrementoEstimadoR(watios,rTotalActual,LIMITE_SUPERIOR,LIMITE_INFERIOR,FACTOR_CONVERSOR_WATIOS_R_SECUNDARIA);
-       }
-       else{ //Watios 0-50
-         desactivarDerivacion();
-       
-       }
-      }
-      else{
-        Serial.println("Calefactor");
-        
-        derivarARPrimaria();
-        incrementoEstimadoR=calcularIncrementoEstimadoR(watios,rTotalActual,LIMITE_SUPERIOR,LIMITE_INFERIOR,FACTOR_CONVERSOR_WATIOS);
-      }
-
+      incrementoEstimadoR=calcularIncrementoEstimadoR(watios,rTotalActual,LIMITE_SUPERIOR,LIMITE_INFERIOR,FACTOR_CONVERSOR_WATIOS);
+      Serial.println(incrementoEstimadoR);
+      
       modificarResistencias(watios,incrementoEstimadoR,rTotalActual);
 
     if(estaDerivando && estanResistenciasActivadas()){
   
-      //Me guardo el tiempo que lleva el sistema al mínimo de potencia derivada
+      //Me guardo el tiempo que lleva el sistema al mÃ­nimo de potencia derivada
       if(tIniDerivandoAlMinimo==0){
         tIniDerivandoAlMinimo=millis();
       }
   
-      //Si derivando > segundos predefinidos, paramos la derivación
+      //Si derivando > segundos predefinidos, paramos la derivaciÃ³n
       if(timeoutDesactivarDerivacion()) desactivarDerivacion();
     }
     else{
@@ -235,7 +188,7 @@ int ajustarSalida( int watios){
   imprimirDatos(watios,incrementoEstimadoR);  
 
   //Delay para ver los valores en el emulador
-  delay(1000);
+  delay(500);
 
   return incrementoEstimadoR; 
 }
@@ -255,7 +208,7 @@ void imprimirDatos(int watios,int incrementoEstimadoR){
   Serial.print("\twDeriv:\t");
   Serial.print(wDerivando);
   Serial.print("\tRF: ");
-  Serial.print(getValorActualResistencia() );
+  Serial.print(rTotalActual );
   Serial.print("\tInc:");
   Serial.print(incrementoEstimadoR);
   Serial.print(" D: ");
@@ -269,7 +222,7 @@ void imprimirDatos(int watios,int incrementoEstimadoR){
 }
 
 void modificarResistencias(int watios,int incrementoEstimadoR,int rTotalActual){
-  //Si la resistencia no varía, salimos
+  //Si la resistencia no varÃ­a, salimos
   int ACTIV_R_TMP[8] ={true,true,true,true,true,true,true,true};
 
   if (incrementoEstimadoR==0) return ;
@@ -277,12 +230,14 @@ void modificarResistencias(int watios,int incrementoEstimadoR,int rTotalActual){
   int rTotalEstimada=rTotalActual+incrementoEstimadoR;
 
   //Si el valor era negativo, quiero que se quede por encima a cero en el ajuste, por lo que prefiero pasarme
+  /*
   if(watios<0){
       rTotalEstimada-=10;
   }
+  */
 
   //Aqui puede pasar que la rTotalEstimada sea muy grande, y entonces es mejor apagar el sistema
-  //Para que la Resistencia no consuma el mínimo
+  //Para que la Resistencia no consuma el mÃ­nimo
   Serial.println("RTotalEstimada: " + rTotalEstimada);
   if(rTotalEstimada>(RTOTAL + 30) )
   {
@@ -293,16 +248,14 @@ void modificarResistencias(int watios,int incrementoEstimadoR,int rTotalActual){
       
     rTotalEstimada=constrain(rTotalEstimada, 0, RTOTAL);  
   
-  
     //Calculamos el nuevo vector de activaciones
     int rAcumulada=0;
-    
     
     for(int i=0;i<8;i++){
       rAcumulada+=VALOR_R[i];
       
       if(rAcumulada>rTotalEstimada){
-        //Si sumando este valor, superamos el umbral, habrá que probar con el siguiente y este ponerlo a false
+        //Si sumando este valor, superamos el umbral, habrÃ¡ que probar con el siguiente y este ponerlo a false
         ACTIV_R_TMP[i]=false;
         rAcumulada-=VALOR_R[i];
       }
@@ -334,23 +287,23 @@ void cambiarResistencias(int ACTIV_R_TMP[8]){
 }
 
 /*
-Funcion que estima el incremento o decremento que deberá tener la resistencia para aproximarnos a 0 sin sobrepasar
+Funcion que estima el incremento o decremento que deberÃ¡ tener la resistencia para aproximarnos a 0 sin sobrepasar
 
-los límites (LIMITE_INFERIOR,LIMITE_SUPERIOR).
+los lÃ­mites (LIMITE_INFERIOR,LIMITE_SUPERIOR).
 
-En un futuro, debería almacenar un histórico y basarse en los últimos x valores para realizar la estimación. ASí, las subidas abruptas serían 
+En un futuro, deberÃ­a almacenar un histÃ³rico y basarse en los Ãºltimos x valores para realizar la estimaciÃ³n. ASÃ­, las subidas abruptas serÃ­an 
 
 estimadas  por tanto no inyectadas a red, 
-El valor actual de rTotal no sirve de mucho, pero es posible que tenga que usar exponenciales para realizar la estimación
+El valor actual de rTotal no sirve de mucho, pero es posible que tenga que usar exponenciales para realizar la estimaciÃ³n
 
 */
   /*Calculamos la logica que nos diga cuanto incrementar
     Convertir de watios a resistencia(R)
     Para calcular la cantidad de elementos de resistencia a subir o bajar, tengo que saber
     la carga de la potencia (vamos, lo que gasta el cacharro que le enchufemos)
-    No es lo mismo, si le metemos 500W que si le metemos 2000, el valor de R cambiaría
+    No es lo mismo, si le metemos 500W que si le metemos 2000, el valor de R cambiarÃ­a
 
-    Otra forma, sería aprendiendo cuanto sube con cada incremento simple, pero necesitaríamos memoria flash
+    Otra forma, serÃ­a aprendiendo cuanto sube con cada incremento simple, pero necesitarÃ­amos memoria flash
 
     
   */
@@ -358,22 +311,53 @@ El valor actual de rTotal no sirve de mucho, pero es posible que tenga que usar 
 int calcularIncrementoEstimadoR(int watios,int rTotal,uint8_t LIMITE_SUPERIOR,uint8_t LIMITE_INFERIOR,float FACTOR_CONVERSOR){
     int r=0;
     //Solo modificaremos la resistencia si estamos fuera de rangos. 
-    //Estos valores tendrían que autocalcularse en función del calentador enchufado al potenciometro. Revisar
+    //Estos valores tendrÃ­an que autocalcularse en funciÃ³n del calentador enchufado al potenciometro. Revisar
     if(watios>LIMITE_SUPERIOR || watios<LIMITE_INFERIOR){
 //      r=map(watios, -1000, 1000, -RTOTAL, RTOTAL);
-      r=watios/FACTOR_CONVERSOR;
-
+      int puntoMedio=(LIMITE_SUPERIOR-LIMITE_INFERIOR)/2;
+      int watiosAjustados=0;
+      if(watios>0) watiosAjustados=watios+puntoMedio;
+      else watiosAjustados=watios-puntoMedio;
+      
+      r=(watiosAjustados)/FACTOR_CONVERSOR;
+      Serial.print("R: ");Serial.println(r);
     }
-    //La resistencia tiene un rango de 0-400, nunca debe sobrepasarlo
-    //JJV r=constrain(r, -(RTOTAL), (RTOTAL));  
-    //Si estamos por encima de 0w no queremos volver otra vez a <0 por lo que ajustamos un poco por encima
-    if(watios>0){
-      r=r-20;
-    }
+    else return r;
     
-        //La resistencia tiene un rango de 0-400, nunca debe sobrepasarlo
+    //La resistencia tiene un rango de 0-400, nunca debe sobrepasarlo
     r=constrain(r, -(RTOTAL), (RTOTAL));  
 
+
+    //Si el valor era negativo, quiero que se quede por encima a cero en el ajuste, por lo que prefiero pasarme
+    if(watios<0){
+        Serial.println(r);
+          //r-=(-r/20);
+          if(watios<(-20)){
+            r-=2; //Le sumamos un poquito para que quede por encima
+          }
+          else r=(-2);
+        Serial.println(r);
+    }
+
+    //Si estamos por encima de 0w no queremos volver otra vez a <0 por lo que ajustamos un poco por encima
+    if(watios>0){
+        Serial.println(r);
+        if(r>1){
+//          r=(r/3);
+          if(watios>LIMITE_SUPERIOR+100){
+              r=r/2; //Ajustamos 3
+          }
+          else if(watios>LIMITE_SUPERIOR+50){
+            r=(r/3);
+          }
+          else if(watios>LIMITE_SUPERIOR+20){
+            r=(r/4);
+          }
+          else r=1;
+        }
+        Serial.println(r);
+    }
+ 
     return r;
 }
 
@@ -396,20 +380,19 @@ void activarResistencia(int i){
 }  
   
 void activarDerivacion(){
+  if(!estaDerivando){
     estaDerivando=true;
     digitalWrite(PIN_DERIVANDO1,LOW);
-    digitalWrite(PIN_DERIVANDO2,LOW);
   
     Serial.println("ACTIVO DERIVACION ----------------------------");
-
+  }
 }  
 
 void desactivarDerivacion(){
   estaDerivando=false;
   digitalWrite(PIN_DERIVANDO1,HIGH);
-  digitalWrite(PIN_DERIVANDO2,HIGH);
   
-  //no debería pasar, pero por si acaso, inicializamos Rs
+  //no deberÃ­a pasar, pero por si acaso, inicializamos Rs
 
   //activarResistencias();
   
@@ -454,7 +437,7 @@ int leerValorRadioFrecuencia(){
 	}
        
         String watts=valor.substring(0,valor.indexOf(' '));
-	
+
         int iWatts=watts.toInt();
         if(iWatts==0) iWatts=INDEFINIDO;
         digitalWrite(BACKLIGHT_PIN, LOW);
@@ -472,12 +455,10 @@ void ejecutarTestResistencias(){
   activarResistencias();  
   Serial.println("Mulimetro R debe medir 500");
   delay(10000);
+
 }
-<<<<<<< HEAD
-=======
 
-
-float rellenarVectorDerivador(){
+float ajustarDerivador(){
    Serial.println("Ajustando Derivador ");
    delay(5000);
 
@@ -491,8 +472,8 @@ float rellenarVectorDerivador(){
    delay (5000); //Esperamos un segundo y medimos
     
    Serial.println("DesactivarR");
-   //Damos máxima potencia a la resistencia y medimos después
-   desactivarResistencias(); //Establece máxima potencia
+   //Damos mÃ¡xima potencia a la resistencia y medimos despuÃ©s
+   desactivarResistencias(); //Establece mÃ¡xima potencia
    
    delay (5000); //Esperamos un segundo y medimos
 
@@ -500,8 +481,8 @@ float rellenarVectorDerivador(){
 
    Serial.println("ActivarR");
 
-   //Damos máxima potencia a la resistencia y medimos después
-   activarResistencias(); //Establece máxima potencia
+   //Damos mÃ¡xima potencia a la resistencia y medimos despuÃ©s
+   activarResistencias(); //Establece mÃ¡xima potencia
    
    delay (5000); //Esperamos un segundo y medimos
    
@@ -530,7 +511,66 @@ float rellenarVectorDerivador(){
    Serial.println(factor);
    
    if(factor>0){
-     Serial.println("Se establece el factor de conversión calculado automáticamente");
+     Serial.println("Se establece el factor de conversiÃ³n calculado automÃ¡ticamente");
+     FACTOR_CONVERSOR_WATIOS=factor;      
+   }
+}
+
+
+float rellenarVectorDerivador(){
+   Serial.println("Ajustando Derivador ");
+   delay(5000);
+
+   activarResistencias();
+   activarDerivacion();
+
+   float fcv=FACTOR_CONVERSOR_WATIOS;
+
+   int wattsBase=leerValorRadioFrecuencia();
+
+   delay (5000); //Esperamos un segundo y medimos
+    
+   Serial.println("DesactivarR");
+   //Damos mÃ¡xima potencia a la resistencia y medimos despuÃ©s
+   desactivarResistencias(); //Establece mÃ¡xima potencia
+   
+   delay (5000); //Esperamos un segundo y medimos
+
+   int wattsMaximo=leerValorRadioFrecuencia();
+
+   Serial.println("ActivarR");
+
+   //Damos mÃ¡xima potencia a la resistencia y medimos despuÃ©s
+   activarResistencias(); //Establece mÃ¡xima potencia
+   
+   delay (5000); //Esperamos un segundo y medimos
+   
+   int wattsMinimo=leerValorRadioFrecuencia();
+  
+   //Watios que consume el derivador
+   int wattsResistorMax=(wattsMaximo-wattsBase);
+   int wattsResistorMin=(wattsMinimo-wattsBase);
+   
+ 
+   //Ahora que tenemos los watios que consume el derivador, calculamos el factor
+   //En las pruebas, la resistencia es lineal
+   float factor=(wattsResistorMax-wattsResistorMin)/500; //Ejm: 100-2000w= 1900/500=3,8 80-1000=1,84
+   
+   Serial.print("Base:");
+   Serial.print(wattsBase);
+   Serial.print(" Max:");
+   Serial.print(wattsMaximo);
+   Serial.print(" Min:");
+   Serial.print(wattsMinimo);
+   Serial.print(" wMax:");
+   Serial.print(wattsResistorMax);
+   Serial.print(" wMin:");
+   Serial.print(wattsResistorMin);
+   Serial.print(" factor RECOMENDADO:");
+   Serial.println(factor);
+   
+   if(factor>0){
+     Serial.println("Se establece el factor de conversiÃ³n calculado automÃ¡ticamente");
      FACTOR_CONVERSOR_WATIOS=factor;      
    }
 }
@@ -599,4 +639,4 @@ int vectorizaNumero(int numero,int pos){
   
 }
 
->>>>>>> origin/AjusteExactoVectorizado
+
