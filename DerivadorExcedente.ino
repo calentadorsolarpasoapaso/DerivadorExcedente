@@ -23,11 +23,13 @@ int MINIMO_WATIOS_RPRINCIPAL=100;
 const uint8_t PIN_RADIO_FRECUENCIA=11;
 const uint8_t PIN_DERIVANDO1=10; 
 
-//const int timerHour = {9
-//const int timerMinut = {
 int PIN_R[8] =      {2,3,4,5,6,7,8,9};
+
 int VALOR_R[8] =    {200,100,100,50,25,12,6,3};
-boolean ACTIV_R[8] ={true,true,true,true,true,true,true,true};
+int ACTIV_R[8] ={true,true,true,true,true,true,true,true};
+
+//Vector de consumo aproximado, más exacto que el calculado
+int vectorConsumo[255][2];
 
 const int INDEFINIDO=999999;
 boolean estaDerivando = false;
@@ -43,8 +45,9 @@ void setup() {
 
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
-  delay(1000);
   Serial.println("Inicializando");
+
+  delay(1000);
 
   Serial.println("www.calentadorsolarpasoapaso.blogspot.com");
   pinMode(PIN_DERIVANDO1, OUTPUT); 
@@ -60,12 +63,12 @@ void setup() {
   desactivarDerivacion();
 
   setupRadioFrecuencia();  
-
   
-  ajustarDerivador();
+//  ajustarDerivador();
+
+//  inicializarVectorConsumo();
 
 }
-
 
 
 void inicializarPinesR(){
@@ -220,7 +223,7 @@ void imprimirDatos(int watios,int incrementoEstimadoR){
 
 void modificarResistencias(int watios,int incrementoEstimadoR,int rTotalActual){
   //Si la resistencia no varía, salimos
-  boolean ACTIV_R_TMP[8] ={true,true,true,true,true,true,true,true};
+  int ACTIV_R_TMP[8] ={true,true,true,true,true,true,true,true};
 
   if (incrementoEstimadoR==0) return ;
   
@@ -269,17 +272,19 @@ void modificarResistencias(int watios,int incrementoEstimadoR,int rTotalActual){
   
   
     //Ahora toca activar o desactivar las que toquen
-    for(int i=0;i<8;i++){
-      if(ACTIV_R_TMP[i]) activarResistencia(i);
-      else desactivarResistencia(i);
-      
-    }
-  }//Fin else
+    cambiarResistencias(ACTIV_R_TMP);
+    }//Fin else
   
   
   return ;
   }
 
+void cambiarResistencias(int ACTIV_R_TMP[8]){
+    for(int i=0;i<8;i++){
+      if(ACTIV_R_TMP[i]) activarResistencia(i);
+      else desactivarResistencia(i);
+    }
+}
 
 /*
 Funcion que estima el incremento o decremento que deberá tener la resistencia para aproximarnos a 0 sin sobrepasar
@@ -512,4 +517,125 @@ float ajustarDerivador(){
 }
 
 
+float rellenarVectorDerivador(){
+   Serial.println("Ajustando Derivador ");
+   delay(5000);
+
+   activarResistencias();
+   activarDerivacion();
+
+   float fcv=FACTOR_CONVERSOR_WATIOS;
+
+   int wattsBase=leerValorRadioFrecuencia();
+
+   delay (5000); //Esperamos un segundo y medimos
+    
+   Serial.println("DesactivarR");
+   //Damos máxima potencia a la resistencia y medimos después
+   desactivarResistencias(); //Establece máxima potencia
+   
+   delay (5000); //Esperamos un segundo y medimos
+
+   int wattsMaximo=leerValorRadioFrecuencia();
+
+   Serial.println("ActivarR");
+
+   //Damos máxima potencia a la resistencia y medimos después
+   activarResistencias(); //Establece máxima potencia
+   
+   delay (5000); //Esperamos un segundo y medimos
+   
+   int wattsMinimo=leerValorRadioFrecuencia();
+  
+   //Watios que consume el derivador
+   int wattsResistorMax=(wattsMaximo-wattsBase);
+   int wattsResistorMin=(wattsMinimo-wattsBase);
+   
+ 
+   //Ahora que tenemos los watios que consume el derivador, calculamos el factor
+   //En las pruebas, la resistencia es lineal
+   float factor=(wattsResistorMax-wattsResistorMin)/500; //Ejm: 100-2000w= 1900/500=3,8 80-1000=1,84
+   
+   Serial.print("Base:");
+   Serial.print(wattsBase);
+   Serial.print(" Max:");
+   Serial.print(wattsMaximo);
+   Serial.print(" Min:");
+   Serial.print(wattsMinimo);
+   Serial.print(" wMax:");
+   Serial.print(wattsResistorMax);
+   Serial.print(" wMin:");
+   Serial.print(wattsResistorMin);
+   Serial.print(" factor RECOMENDADO:");
+   Serial.println(factor);
+   
+   if(factor>0){
+     Serial.println("Se establece el factor de conversión calculado automáticamente");
+     FACTOR_CONVERSOR_WATIOS=factor;      
+   }
+}
+
+
+void inicializarVectorConsumo(){
+     Serial.println("Ajustando Derivador con Vector");
+
+/*
+    for(int i=0;i<255;i++){
+      vectorConsumo[i][0]=0;
+      vectorConsumo[i][1]=0;
+    }
+*/
+ //    delay(5000);
+  
+     activarResistencias();
+     activarDerivacion();
+     return; 
+     delay(2000);
+  
+     int wattsBase=leerValorRadioFrecuencia();
+  
+     delay(2000);
+     
+    for(int i=255;i>0;i--){
+      //Incrementamos R
+      int posicionResistencias[8];
+      for(int iR=0;iR<8;iR++){
+        posicionResistencias[iR] = vectorizaNumero(i,iR);
+      }
+   
+     cambiarResistencias(posicionResistencias);
+     delay(2000);
+  
+     int wattsRI=leerValorRadioFrecuencia();
+    
+      //rellenamos vector
+      vectorConsumo[i][1]=(wattsRI-wattsBase);    
+      vectorConsumo[i][0]=i;    
+
+      Serial.print(vectorConsumo[i][0]);
+      Serial.print(" ");
+      Serial.print(vectorConsumo[i][1]);
+      Serial.println("");
+      
+  }
+    
+    Serial.println("CONSUMO: ");
+    for(int i=0;i<255;i++){
+      Serial.print(vectorConsumo[i][0]);
+      Serial.print(" ");
+      Serial.print(vectorConsumo[i][1]);
+      Serial.println("");
+    }  
+}
+
+int vectorizaNumero(int numero,int pos){
+  
+  int ACTIV_R_TMP[8] ={true,true,true,true,true,true,true,true};
+
+  for(int i=0; i<8; i++){ //Ciclo para ver que leds prendo
+    ACTIV_R_TMP[i]=bitRead(numero, i);
+  }
+  return ACTIV_R_TMP[pos];
+  
+}
 
